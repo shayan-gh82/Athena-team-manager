@@ -1,0 +1,18 @@
+import { useMemo, useState } from 'react'
+import { LayoutGrid, Plus, Search, Star, Sparkles } from 'lucide-react'
+import ProjectCard from '@/components/project/ProjectCard'
+import ProjectForm from '@/components/project/ProjectForm'
+import Modal from '@/components/ui/Modal'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import EmptyState from '@/components/ui/EmptyState'
+import ProjectTemplatePicker from '@/components/project/ProjectTemplatePicker'
+import { useAppSelector } from '@/store/hooks'
+import { useI18n } from '@/i18n'
+
+export default function ProjectsPage(){
+  const { language, t } = useI18n()
+  const projects=useAppSelector((s)=>s.project.projects);const currentUserId=useAppSelector((s)=>s.auth.currentUserId);const currentUser=useAppSelector((s)=>s.users.users.find((u)=>u.id===currentUserId));const canManage=currentUser?.role==='manager';const[open,setOpen]=useState(false);const[templatesOpen,setTemplatesOpen]=useState(false);const[query,setQuery]=useState('');const[tab,setTab]=useState<'all'|'favorites'>('all')
+  const visible=useMemo(()=>projects.filter((p)=>!p.isArchived).filter((p)=>canManage||Boolean(currentUserId&&p.memberIds.includes(currentUserId))).filter((p)=>tab==='all'||p.isFavorite).filter((p)=>p.title.toLowerCase().includes(query.toLowerCase())),[projects,currentUserId,canManage,query,tab])
+  return <div className="page-container"><div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="text-xs font-bold uppercase tracking-[.18em]" style={{color:'rgb(var(--primary))'}}>{t('Workspace')}</div><h1 className="mt-1 text-3xl font-bold">{t('Projects')}</h1><p className="mt-2" style={{color:'rgb(var(--muted))'}}>{t('Plan, track and ship work across your team.')}</p></div>{canManage&&<div className="flex flex-wrap gap-2"><Button variant="secondary" icon={Sparkles} onClick={()=>setTemplatesOpen(true)}>{t('Templates')}</Button><Button icon={Plus} onClick={()=>setOpen(true)}>{t('New project')}</Button></div>}</div><div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex rounded-xl bg-[rgb(var(--surface-alt))] p-1"><button className={`rounded-lg px-3 py-2 text-sm font-medium ${tab==='all'?'bg-[rgb(var(--surface))] shadow-sm':''}`} onClick={()=>setTab('all')}><LayoutGrid size={18} className={language==='fa'?'ml-1 inline':'mr-1 inline'}/>{t('All')}</button><button className={`rounded-lg px-3 py-2 text-sm font-medium ${tab==='favorites'?'bg-[rgb(var(--surface))] shadow-sm':''}`} onClick={()=>setTab('favorites')}><Star size={18} className={language==='fa'?'ml-1 inline':'mr-1 inline'}/>{t('Favorites')}</button></div><div className="relative w-full sm:max-w-xs"><Search className={`absolute top-1/2 -translate-y-1/2 ${language==='fa'?'right-3':'left-3'}`} size={19} style={{color:'rgb(var(--muted))'}}/><Input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder={t('Search projects...')} className={language==='fa'?'pr-10':'pl-10'}/></div></div>{visible.length?<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((project)=><ProjectCard key={project.id} project={project}/>)}</div>:<EmptyState title={t('No projects here')} description={t('Create a project or adjust your search to get started.')} action={canManage?<Button onClick={()=>setOpen(true)}>{t('Create project')}</Button>:undefined}/>}<Modal isOpen={open} onClose={()=>setOpen(false)} title={t('Create project')}><ProjectForm onClose={()=>setOpen(false)}/></Modal><Modal isOpen={templatesOpen} onClose={()=>setTemplatesOpen(false)} title={t('Project templates')}><ProjectTemplatePicker onDone={()=>setTemplatesOpen(false)}/></Modal></div>
+}
